@@ -68,7 +68,11 @@ module Spree
         # all the other adjustments amounts were not updated yet
         def eligible?(order)
           return self.promotion.eligible?(order) if self.promotion.products.blank?
-          self.promotion.eligible?(order) && self.current_discount < self.best_concurrent_discount(order)
+          self.promotion.eligible?(order) && self.best_then_concurrent_discounts?(order)
+        end
+
+        def best_then_concurrent_discounts?(order)
+          self.current_discount < self.best_concurrent_discount(order)
         end
 
         def current_discount
@@ -76,7 +80,7 @@ module Spree
         end
 
         def best_concurrent_discount(order)
-          self.collect_discounts_sharing_products(order).min
+          self.collect_discounts_sharing_products(order).min || 0
         end
 
         # TODO No idea yet why self.adjusment does not match orders adjustments when it should
