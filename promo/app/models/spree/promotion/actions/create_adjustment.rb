@@ -7,7 +7,7 @@ module Spree
       class CreateAdjustment < PromotionAction
         calculated_adjustments
 
-        has_one :adjustment, :as => :originator, :dependent => :destroy
+        has_many :adjustments, :as => :originator, :dependent => :destroy
 
         before_validation :ensure_action_has_calculator
 
@@ -39,10 +39,6 @@ module Spree
         #
         # TODO Why is it setting source here? It's not used anyhere. Orders are
         # retrieved through :adjustable
-        #
-        # TODO Since this class has_one :adjustment we might need to find a better way
-        # to create adjustments. We're overriding Rails API create_association method for
-        # has_one associations
         def create_adjustment(label, target, calculable, mandatory = false)
           amount = compute_amount(calculable)
           params = { :amount => amount,
@@ -63,6 +59,7 @@ module Spree
         # Should be called only after all promotion adjusments amount on the current order are saved.
         # This gives the flexibility to manage discount concurrently among products in the order
         #
+        # TODO write a test for this scenario
         # Otherwise it leads to this issue:
         # A concurrent adjustment might be the best discount, although it shouldn't, because
         # all the other adjustments amounts were not updated yet
@@ -71,12 +68,16 @@ module Spree
           self.promotion.eligible?(order) && self.best_then_concurrent_discounts?(order)
         end
 
-        def best_then_concurrent_discounts?(order)
-          self.current_discount < self.best_concurrent_discount(order)
+        def best_than_concurrent_discounts?(order)
+          self.current_discount(order) < self.best_concurrent_discount(order)
         end
 
-        def current_discount
-          self.adjustment.amount
+        def current_order_adjustment(order)
+          self.adjustments.where("adjustable_id = ? AND adjustable_type = ?", order.id, "Spree::Order").first
+        end
+
+        def current_discount(order)
+          current_order_adjustment(order).amount
         end
 
         def best_concurrent_discount(order)
@@ -88,7 +89,7 @@ module Spree
         #   concurring_adjustments = order.adjustments - [self.adjustment]
         def collect_discounts_sharing_products(order)
           order.adjustments.inject([]) do |amount, adjustment|
-            unless adjustment.id == self.adjustment.id
+            unless adjustment.id == self.current_order_adjustment(order).id
               adjustment_products = adjustment.originator.promotion.products
 
               if self.promotion.products.any? { |product| adjustment_products.include?(product) }
