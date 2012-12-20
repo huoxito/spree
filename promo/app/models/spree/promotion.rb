@@ -83,9 +83,11 @@ module Spree
       !UNACTIVATABLE_ORDER_STATES.include?(order.state)
     end
 
-    # Products assigned to all product rules
+    # Rules that involves products should respond to a products method
     def products
-      @products ||= rules.of_type('Spree::Promotion::Rules::Product').map(&:products).flatten.uniq
+      @products = self.rules.inject([]) do |products, rule|
+        products << rule.products if rule.respond_to?(:products)
+      end.flatten.uniq
     end
 
     def usage_limit_exceeded?(order = nil)
@@ -104,6 +106,5 @@ module Spree
     def credits_count
       credits.count
     end
-
   end
 end

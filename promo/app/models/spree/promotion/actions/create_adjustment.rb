@@ -7,7 +7,6 @@ module Spree
       class CreateAdjustment < PromotionAction
         calculated_adjustments
 
-        # delegate :eligible?, :to => :promotion
         has_one :adjustment, :as => :originator, :dependent => :destroy
 
         before_validation :ensure_action_has_calculator
@@ -58,8 +57,7 @@ module Spree
         # TODO Shouldn't Spree Promotions have an eligible object?
         def eligible?(order)
           return self.promotion.eligible?(order) if self.promotion.products.blank?
-
-          (self.promotion.eligible?(order) && current_discount < best_concurrent_discount(order))
+          self.promotion.eligible?(order) && self.current_discount < self.best_concurrent_discount(order)
         end
 
         def current_discount
