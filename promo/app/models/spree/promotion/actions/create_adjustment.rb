@@ -65,7 +65,7 @@ module Spree
         # all the other adjustments amounts were not updated yet
         def eligible?(order)
           return self.promotion.eligible?(order) if self.promotion.products.blank?
-          self.promotion.eligible?(order) && self.best_then_concurrent_discounts?(order)
+          self.promotion.eligible?(order) && self.best_than_concurrent_discounts?(order)
         end
 
         def best_than_concurrent_discounts?(order)
@@ -87,12 +87,14 @@ module Spree
         # TODO No idea yet why self.adjusment does not match orders adjustments when it should
         # so checking by id for now
         #   concurring_adjustments = order.adjustments - [self.adjustment]
+        #
+        # Collect concurrent discounts of products in other eligible promotions
         def collect_discounts_sharing_products(order)
           order.adjustments.inject([]) do |amount, adjustment|
             unless adjustment.id == self.current_order_adjustment(order).id
               adjustment_products = adjustment.originator.promotion.products
 
-              if self.promotion.products.any? { |product| adjustment_products.include?(product) }
+              if adjustment.originator.promotion.eligible?(order) && self.promotion.products.any? { |product| adjustment_products.include?(product) }
                 amount << adjustment.amount
               end
             end
