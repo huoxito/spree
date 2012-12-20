@@ -39,6 +39,10 @@ module Spree
         #
         # TODO Why is it setting source here? It's not used anyhere. Orders are
         # retrieved through :adjustable
+        #
+        # TODO Since this class has_one :adjustment we might need to find a better way
+        # to create adjustments. We're overriding Rails API create_association method for
+        # has_one associations
         def create_adjustment(label, target, calculable, mandatory = false)
           amount = compute_amount(calculable)
           params = { :amount => amount,
@@ -55,6 +59,13 @@ module Spree
         end
 
         # TODO Shouldn't Spree Promotions have an eligible object?
+        #
+        # Should be called only after all promotion adjusments amount on the current order are saved.
+        # This gives the flexibility to manage discount concurrently among products in the order
+        #
+        # Otherwise it leads to this issue:
+        # A concurrent adjustment might be the best discount, although it shouldn't, because
+        # all the other adjustments amounts were not updated yet
         def eligible?(order)
           return self.promotion.eligible?(order) if self.promotion.products.blank?
           self.promotion.eligible?(order) && self.current_discount < self.best_concurrent_discount(order)

@@ -49,20 +49,25 @@ module Spree
       !originator.respond_to?(:eligible?) || originator.eligible?(source)
     end
 
-    # Update both the eligibility and amount of the adjustment. Adjustments delegate updating of amount to their Originator
-    # when present, but only if +locked+ is false.  Adjustments that are +locked+ will never change their amount.
-    # The new adjustment amount will be set by by the +originator+ and is not automatically saved.  This makes it save
-    # to use this method in an after_save hook for other models without causing an infinite recursion problem.
+    # Update the amount of the adjustment. Adjustments delegate updating of amount to their Originator
+    # when present, but only if +locked+ is false. Adjustments that are +locked+ will never change their amount.
+    #
+    # The new adjustment amount will be set by by the +originator+.
     #
     # order#update_adjustments passes self as the src, this is so calculations can be performed on the
     # current values. If we used source it would load the old record from db for the association
+    # TODO I'm afraid we don't need this source attribute at all, at least not for promotions adjustments
+    # 
+    # Considering we want maximum flexibility to compare adjusments amount against each other
+    # we need to set the eligibility after all adjusments in the order have their amount updated.
     def update!(src = nil)
       src ||= source
       return if locked?
       if originator.present?
         originator.update_adjustment(self, src)
+      else
+        set_eligibility
       end
-      set_eligibility
     end
 
     def display_amount
@@ -70,7 +75,6 @@ module Spree
     end
 
     private
-
       def update_adjustable
         adjustable.update! if adjustable.is_a? Order
       end
@@ -104,6 +108,5 @@ module Spree
           where('amount < 0')
         end
       end
-
   end
 end

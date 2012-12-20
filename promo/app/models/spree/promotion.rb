@@ -61,7 +61,9 @@ module Spree
       end
     end
 
-    # called anytime order.update! happens
+    # Called anytime order.update! happens
+    # TODO Maybe Rules should be able to compute the discount
+    # So we could remove eligibility responsability from Actions
     def eligible?(order)
       return false if expired? || usage_limit_exceeded?(order)
       rules_are_eligible?(order, {})
