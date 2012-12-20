@@ -1,6 +1,9 @@
 module Spree
   class Promotion
     module Actions
+      # Manages the adjustment related to this action. Not only the creation of it
+      # Responsible for the eligibility of the adjustment.
+      # eligible? is called every time this adjusment is updated!
       class CreateAdjustment < PromotionAction
         calculated_adjustments
 
@@ -27,10 +30,6 @@ module Spree
           order.update!
         end
 
-        # def eligible?(order)
-        #   self.promotion.eligible? 
-        # end
-
         # override of CalculatedAdjustments#create_adjustment so promotional
         # adjustments are added all the time. They will get their eligability
         # set to false if the amount is 0
@@ -56,14 +55,34 @@ module Spree
           [(calculable.item_total + calculable.ship_total), super.to_f.abs].min * -1
         end
 
-        def collect_discounts_sharing_products
-          concurring_adjustments = order.adjustments - [self.adjustment]
-          concurring_adjustments.inject([]) do |amount, adjustment|
-            adjustment_products = adjustment.originator.promotion.products
+        # TODO Shouldn't Spree Promotions have an eligible object?
+        def eligible?(order)
+          return self.promotion.eligible?(order) if self.promotion.products.blank?
 
-            if self.promotion.products.any? { |product| adjustment_products.include?(product) }
-              amount << adjustment.amount
+          (self.promotion.eligible?(order) && current_discount < best_concurrent_discount(order))
+        end
+
+        def current_discount
+          self.adjustment.amount
+        end
+
+        def best_concurrent_discount(order)
+          self.collect_discounts_sharing_products(order).min
+        end
+
+        # TODO No idea yet why self.adjusment does not match orders adjustments when it should
+        # so checking by id for now
+        #   concurring_adjustments = order.adjustments - [self.adjustment]
+        def collect_discounts_sharing_products(order)
+          order.adjustments.inject([]) do |amount, adjustment|
+            unless adjustment.id == self.adjustment.id
+              adjustment_products = adjustment.originator.promotion.products
+
+              if self.promotion.products.any? { |product| adjustment_products.include?(product) }
+                amount << adjustment.amount
+              end
             end
+            amount
           end
         end
 
