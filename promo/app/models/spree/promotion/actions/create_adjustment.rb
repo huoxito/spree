@@ -1,9 +1,21 @@
 module Spree
   class Promotion
     module Actions
-      # Manages the adjustment related to this action. Not only the creation of it
-      # Responsible for the eligibility of the adjustment.
-      # eligible? is called every time this adjusment is updated!
+      # Responsible for the creation and eligibility of an adjustment
+      #
+      # Only perform and eligible methods are called from outside this class
+      # This differs from Spree core default mainly for the fact that it does
+      # not delegates eligible? to the Promotion class. Instead it adds
+      # more logic to give the flexibility of multiple promotions being applied
+      # to the same order.
+      #
+      # All theses ajustments (discounts) might be eligible simultaneously
+      #
+      #   25% off for all Teflon Covers in the store
+      #   15% off for all products associated with Food Equipment category
+      #
+      # However if there is more than one promotion set for Food Equipment products
+      # only the most valuable adjustment will be eligible
       class CreateAdjustment < PromotionAction
         calculated_adjustments
 
@@ -29,7 +41,7 @@ module Spree
           order.update!
         end
 
-        # override of CalculatedAdjustments#create_adjustment so promotional
+        # Override of CalculatedAdjustments#create_adjustment so promotional
         # adjustments are added all the time. They will get their eligability
         # set to false if the amount is 0
         #
@@ -37,8 +49,8 @@ module Spree
         # It probably indicates that the promotion should not even be eligible in
         # the first place
         #
-        # TODO Why is it setting source here? It's not used anyhere. Orders are
-        # retrieved through :adjustable
+        # TODO Why is it setting source here? It's not used anywhere I guess.
+        # Orders are retrieved through :adjustable
         def create_adjustment(label, target, calculable, mandatory = false)
           amount = compute_amount(calculable)
           params = { :amount => amount,
@@ -49,15 +61,18 @@ module Spree
           target.adjustments.create(params, :without_protection => true)
         end
 
-        # Ensure a negative amount which does not exceed the sum of the order's item_total and ship_total
-        def compute_amount(calculable)
-          [(calculable.item_total + calculable.ship_total), super.to_f.abs].min * -1
-        end
-
-        # TODO Shouldn't Spree Promotions have an eligible object?
+        # Decides whether or not the related adjustment will be eligible
         #
-        # Should be called only after all promotion adjusments amount on the current order are saved.
-        # This gives the flexibility to manage discount concurrently among products in the order
+        # It goes through promotion#eligible? and promotion_rules#eligible?
+        # first to avoid overwork.
+        # In case the promotion is associated with products it tries to decide
+        # whether it has the most valuable adjustment among the ones appliable
+        # for the same products in the order.
+        #
+        # Should be called only after all promotion adjusments amount on the order
+        # are saved. This gives the flexibility to manage discounts concurrently
+        # among products in the order. Otherwise the logic described above would
+        # not work properly
         #
         # TODO write a test for this scenario
         # Otherwise it leads to this issue:
@@ -66,6 +81,11 @@ module Spree
         def eligible?(order)
           return self.promotion.eligible?(order) if self.promotion.products.blank?
           self.promotion.eligible?(order) && self.best_than_concurrent_discounts?(order)
+        end
+
+        # Ensure a negative amount which does not exceed the sum of the order's item_total and ship_total
+        def compute_amount(calculable)
+          [(calculable.item_total + calculable.ship_total), super.to_f.abs].min * -1
         end
 
         def best_than_concurrent_discounts?(order)
@@ -94,8 +114,8 @@ module Spree
             unless adjustment.id == self.current_order_adjustment(order).id
               adjustment_products = adjustment.originator.promotion.products
 
-              if adjustment.originator.promotion.eligible?(order) && self.promotion.products.any? { |product| adjustment_products.include?(product) }
-                amount << adjustment.amount
+              if self.promotion.products.any? { |product| adjustment_products.include?(product) }
+                amount << adjustment.amount if adjustment.originator.promotion.eligible?(order)
               end
             end
             amount

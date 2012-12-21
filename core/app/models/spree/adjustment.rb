@@ -34,12 +34,11 @@ module Spree
     after_save :update_adjustable
     after_destroy :update_adjustable
 
-    # Update the boolean _eligible_ attribute which deterimes which adjustments count towards the order's
+    # Update the boolean _eligible_ attribute which determines which adjustments count towards the order's
     # adjustment_total.
     def set_eligibility
-      update_attribute_without_callbacks(:eligible,
-                                         mandatory ||
-                                         (amount != 0 && eligible_for_originator?))
+      eligibility = mandatory || (amount != 0 && eligible_for_originator?)
+      update_attribute_without_callbacks(:eligible, eligibility)
     end
 
     # Allow originator of the adjustment to perform an additional eligibility of the adjustment
