@@ -425,7 +425,7 @@ module Spree
     end
 
     def products
-      line_items.includes(:variant).map { |li| li.variant.product }
+      line_items.map { |item| item.product }
     end
 
     def insufficient_stock_lines
