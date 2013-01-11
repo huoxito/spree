@@ -21,5 +21,4 @@ describe Spree::Admin::OrdersController do
       flash[:error].should_not be_nil
     end
   end
-
 end
