@@ -1,5 +1,4 @@
 $(document).ready(function(){
-
   add_address = function(addr){
     var html = "";
     if(addr!=undefined){
@@ -97,8 +96,6 @@ $(document).ready(function(){
       var ul = this.menu.element;
       ul.outerWidth(this.element.outerWidth());
     }
-
-
   }
 
   var show_billing = function(show) {
@@ -117,6 +114,8 @@ $(document).ready(function(){
     show_billing(!$(this).is(':checked'));
   });
 
+  show_billing(!$('input#order_use_billing').is(':checked'));
+
   $('#guest_checkout_true').change(function() {
     $('#customer_search').val("");
     $('#user_id').val("");
@@ -130,5 +129,3 @@ $(document).ready(function(){
     })
   });
 });
-
-
