@@ -84,7 +84,6 @@ module Spree
       initializer "spree.mail.settings" do |app|
         if Spree::MailMethod.table_exists?
           Spree::Core::MailSettings.init
-          Mail.register_interceptor(Spree::Core::MailInterceptor)
         end
       end
     end
