@@ -77,7 +77,7 @@ $(document).ready(function(){
         });
 
         $('#order_email').val(ui.item.data['email']);
-        $('#user_id').val(ui.item.data['id']);
+        $('#order_user_id').val(ui.item.data['id']);
         $('#guest_checkout_true').prop("checked", false);
         $('#guest_checkout_false').prop("checked", true);
         $('#guest_checkout_false').prop("disabled", false);
@@ -118,7 +118,7 @@ $(document).ready(function(){
 
   $('#guest_checkout_true').change(function() {
     $('#customer_search').val("");
-    $('#user_id').val("");
+    $('#order_user_id').val("");
     $('#checkout_email').val("");
 
     var fields = ["firstname", "lastname", "company", "address1", "address2",

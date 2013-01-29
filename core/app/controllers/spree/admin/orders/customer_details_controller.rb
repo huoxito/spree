@@ -15,11 +15,18 @@ module Spree
           @order.build_ship_address(:country_id => country_id) if @order.ship_address.nil?
         end
 
+        # Updated without protection to set the order user_id if necessary
         def update
-          if @order.update_attributes(params[:order])
+          if @order.update_attributes(params[:order], :without_protection => true)
             flash[:notice] = t('customer_details_updated')
+            if @order.shipments.blank?
+              redirect_to new_admin_order_shipment_path(@order)
+            else
+              redirect_to edit_admin_order_shipment_path(@order, @order.shipment)
+            end
+          else
+            render :action => :edit
           end
-          render :action => :edit
         end
 
         private
