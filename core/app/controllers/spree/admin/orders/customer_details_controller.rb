@@ -20,13 +20,10 @@ module Spree
           if @order.update_attributes(params[:order], :without_protection => true)
             flash[:notice] = t('customer_details_updated')
             if @order.shipments.blank?
-              redirect_to new_admin_order_shipment_path(@order)
-            else
-              redirect_to edit_admin_order_shipment_path(@order, @order.shipment)
+              redirect_to new_admin_order_shipment_path(@order) and return
             end
-          else
-            render :action => :edit
           end
+          render :action => :edit
         end
 
         private
