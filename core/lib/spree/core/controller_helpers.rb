@@ -162,10 +162,8 @@ module Spree
       def set_user_language
         locale = session[:locale]
         locale ||= Rails.application.config.i18n.default_locale
-        if locale.blank? || !I18n.available_locales.include?(locale.to_sym)
-          locale ||= I18n.default_locale
-        end
-        I18n.locale = locale.to_sym
+        locale ||= I18n.default_locale unless I18n.available_locales.map(&:to_s).include?(locale)
+        I18n.locale = locale
       end
 
       # Returns which layout to render.
