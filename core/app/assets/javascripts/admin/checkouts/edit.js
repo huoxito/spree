@@ -1,101 +1,64 @@
 $(document).ready(function(){
-  add_address = function(addr){
-    var html = "";
-    if(addr!=undefined){
-      html += addr['firstname'] + " " + addr['lastname'] + ", ";
-      html += addr['address1'] + ", " + addr['address2'] + ", ";
-      html += addr['city'] + ", ";
+  window.customerTemplate = Handlebars.compile($('#customer_autocomplete_template').text());
 
-      if(addr['state_id']!=null){
-        html += addr['state']['name'] + ", ";
-      }else{
-        html += addr['state_name'] + ", ";
-      }
-
-      html += addr['country']['name'];
-    }
-    return html;
-  }
-
-  format_user_autocomplete = function(item){
-    var data = item.data
-    var html = "<h4>" + data['email'] +"</h4>";
-    html += "<span><strong>Billing:</strong> ";
-    html += add_address(data['bill_address']);
-    html += "</span>";
-
-    html += "<span><strong>Shipping:</strong> ";
-    html += add_address(data['ship_address']);
-    html += "</span>";
-
-    return html
-  }
-
-  prep_user_autocomplete_data = function(data){
-    return $.map(eval(data['users']), function(row) {
-      return {
-          data: row['user'],
-          value: row['user']['email'],
-          result: row['user']['email']
-      }
-    });
+  formatCustomerResult = function(customer) {
+    return customerTemplate({
+      customer: customer,
+      bill_address: customer.bill_address,
+      ship_address: customer.ship_address
+    })
   }
 
   if ($("#customer_search").length > 0) {
-    $("#customer_search").autocomplete({
-      minChars: 5,
-      delay: 500,
-      source: function(request, response) {
-        var params = { q: $('#customer_search').val(),
-                       authenticity_token: AUTH_TOKEN }
-        $.get(Spree.routes.user_search + '&' + jQuery.param(params), function(data) {
-          result = prep_user_autocomplete_data(data)
-          response(result);
-        });
+    $("#customer_search").select2({
+      placeholder: "Choose a customer",
+      ajax: {
+        url: Spree.routes.user_search,
+        datatype: 'json',
+        data: function(term, page) {
+          return { q: term }
+        },
+        results: function(data, page) {
+          return { results: data }
+        }
       },
-      focus: function(event, ui) {
-        $('#customer_search').val(ui.item.label);
-        $(ui).addClass('ac_over');
-        return false;
-      },
-      select: function(event, ui) {
-        $('#customer_search').val(ui.item.label);
-        _.each(['bill', 'ship'], function(addr_name){
-          var addr = ui.item.data[addr_name + '_address'];
-          if(addr!=undefined){
-            $('#order_' + addr_name + '_address_attributes_firstname').val(addr['firstname']);
-            $('#order_' + addr_name + '_address_attributes_lastname').val(addr['lastname']);
-            $('#order_' + addr_name + '_address_attributes_company').val(addr['company']);
-            $('#order_' + addr_name + '_address_attributes_address1').val(addr['address1']);
-            $('#order_' + addr_name + '_address_attributes_address2').val(addr['address2']);
-            $('#order_' + addr_name + '_address_attributes_city').val(addr['city']);
-            $('#order_' + addr_name + '_address_attributes_zipcode').val(addr['zipcode']);
-            $('#order_' + addr_name + '_address_attributes_state_id').val(addr['state_id']);
-            $('#order_' + addr_name + '_address_attributes_country_id').val(addr['country_id']);
-            $('#order_' + addr_name + '_address_attributes_phone').val(addr['phone']);
+      dropdownCssClass: 'customer_search',
+      formatResult: formatCustomerResult,
+      formatSelection: function (customer) {
+        _.each(['bill_address', 'ship_address'], function(address) {
+          var data = customer[address];
+          address_parts = ['firstname', 'lastname',
+                           'company', 'address1',
+                           'address2', 'city',
+                           'zipcode', 'phone']
+          var attribute_wrapper = '#order_' + address + '_attributes_'
+          if(data != undefined) {
+            _.each(address_parts, function(part) {
+              $(attribute_wrapper + part).val(data[part]);
+            })
+
+            $(attribute_wrapper + 'state_id').select2("val", data['state_id']);
+            $(attribute_wrapper + 'country_id').select2("val", data['country_id']);
+          }
+          else {
+            _.each(address_parts, function(part) {
+              $(attribute_wrapper + part).val("");
+            })
+
+            $(attribute_wrapper + 'state_id').select2("val", '');
+            $(attribute_wrapper + 'country_id').select2("val", '');
           }
         });
 
-        $('#order_email').val(ui.item.data['email']);
-        $('#order_user_id').val(ui.item.data['id']);
+        $('#order_email').val(customer.email);
+        $('#order_user_id').val(customer.id);
         $('#guest_checkout_true').prop("checked", false);
         $('#guest_checkout_false').prop("checked", true);
         $('#guest_checkout_false').prop("disabled", false);
-        return true;
-      }
-    }).data("autocomplete")._renderItem = function(ul, item) {
-      $(ul).addClass('ac_results');
-      html = format_user_autocomplete(item);
-      return $("<li></li>")
-              .data("item.autocomplete", item)
-              .append("<a class='ui-menu-item'>" + html + "</a>")
-              .appendTo(ul);
-    }
 
-    $("#customer_search").data("autocomplete")._resizeMenu = function() {
-      var ul = this.menu.element;
-      ul.outerWidth(this.element.outerWidth());
-    }
+        return customer.email;
+      }
+    })
   }
 
   var show_billing = function(show) {
