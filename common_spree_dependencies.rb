@@ -16,8 +16,6 @@ group :assets do
 end
 
 group :test do
-  gem 'guard'
-  gem 'guard-rspec', '~> 0.5.0'
   gem 'rspec-rails', '~> 2.9.0'
   gem 'factory_girl_rails', '~> 1.7.0'
   gem 'email_spec', '~> 1.2.1'
@@ -28,7 +26,6 @@ group :test do
   gem 'selenium-webdriver', '2.25.0'
   gem 'database_cleaner', '0.7.1'
   gem 'launchy'
-  # gem 'debugger'
 end
 
 gemspec
