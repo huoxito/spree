@@ -45,7 +45,11 @@ module Spree
     has_many :line_items, :dependent => :destroy, :order => "created_at ASC"
     has_many :inventory_units
     has_many :payments, :dependent => :destroy
-    has_many :shipments, :dependent => :destroy
+    has_many :shipments, :dependent => :destroy do
+      def states
+        pluck(:state).uniq
+      end
+    end
     has_many :return_authorizations, :dependent => :destroy
     has_many :adjustments, :as => :adjustable, :dependent => :destroy, :order => "created_at ASC"
 
@@ -471,20 +475,24 @@ module Spree
       #
       # The +shipment_state+ value helps with reporting, etc. since it provides a quick and easy way to locate Orders needing attention.
       def update_shipment_state
-        self.shipment_state =
-        case shipments.count
-        when 0
-          nil
-        when shipments.shipped.count
-          'shipped'
-        when shipments.ready.count
-          'ready'
-        when shipments.pending.count
-          'pending'
+        if self.backordered?
+          self.shipment_state = 'backorder'
         else
-          'partial'
+          shipment_states = self.shipments.states
+          if shipment_states.size > 1
+            if shipment_states.include?('ready') && shipment_states.include?('shipped')
+              self.shipment_state = 'partial'
+            else
+              self.shipment_state = 'shipped'
+            end
+          else
+            self.shipment_state = shipment_states.first
+            if self.shipment_state && self.inventory_units.where(:shipment_id => nil).exists?
+              # shipments exist but there are unassigned inventory units
+              self.shipment_state = 'partial'
+            end
+          end
         end
-        self.shipment_state = 'backorder' if backordered?
 
         if old_shipment_state = self.changed_attributes['shipment_state']
           self.state_changes.create({
