@@ -47,7 +47,7 @@ module Spree
     end
 
     has_many :return_authorizations, dependent: :destroy
-    has_many :adjustments, -> { order('created_at ASC') }, as: :adjustable, dependent: :destroy
+    has_many :adjustments, -> { order('created_at ASC') }, dependent: :destroy
 
     accepts_nested_attributes_for :line_items
     accepts_nested_attributes_for :bill_address
@@ -190,11 +190,7 @@ module Spree
     # Array of adjustments that are inclusive in the variant price. Useful for when
     # prices include tax (ex. VAT) and you need to record the tax amount separately.
     def price_adjustments
-      adjustments = []
-
-      line_items.each { |line_item| adjustments.concat line_item.adjustments }
-
-      adjustments
+      adjustments.price.charge
     end
 
     # Array of totals grouped by Adjustment#label. Useful for displaying price
@@ -298,7 +294,8 @@ module Spree
     # Creates new tax charges if there are any applicable rates. If prices already
     # include taxes then price adjustments are created instead.
     def create_tax_charge!
-      Spree::TaxRate.adjust(self)
+      Spree::TaxRate.adjust(self, line_items)
+      Spree::TaxRate.adjust(self, shipments)
     end
 
     def outstanding_balance
@@ -447,13 +444,6 @@ module Spree
     def empty!
       line_items.destroy_all
       adjustments.destroy_all
-    end
-
-    # destroy any previous adjustments.
-    # Adjustments will be recalculated during order update.
-    def clear_adjustments!
-      adjustments.tax.each(&:destroy)
-      price_adjustments.each(&:destroy)
     end
 
     def has_step?(step)
