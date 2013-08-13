@@ -24,7 +24,6 @@ module Spree
     # Updates the order and advances to the next state (when possible.)
     def update
       if @order.update_attributes(object_params)
-        fire_event('spree.checkout.update')
 
         unless @order.next
           flash[:error] = @order.errors[:base].join("\n")
