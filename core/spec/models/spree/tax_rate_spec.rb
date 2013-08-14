@@ -191,7 +191,7 @@ describe Spree::TaxRate do
 
       it "should not create a price adjustment" do
         @rate.adjust(@order, @order.line_items)
-        @order.price_adjustments.count.should == 0
+        @order.adjustments.price.count.should == 0
       end
 
       it "should not create a refund" do
@@ -211,7 +211,7 @@ describe Spree::TaxRate do
 
           it "should create one price adjustment" do
             @rate.adjust(@order, @order.line_items)
-            @order.price_adjustments.count.should == 1
+            @order.adjustments.price.count.should == 1
           end
 
           it "should not create a tax refund" do
@@ -229,7 +229,7 @@ describe Spree::TaxRate do
           before { Spree::Zone.stub_chain :default_tax, :contains? => false }
           it "should not create a price adjustment" do
             @rate.adjust(@order, @order.line_items)
-            @order.price_adjustments.count.should == 0
+            @order.adjustments.price.count.should == 0
           end
 
           it "should create a tax refund" do
@@ -250,7 +250,7 @@ describe Spree::TaxRate do
 
         it "should create a price adjustment" do
           @rate.adjust(@order, @order.line_items)
-          @order.price_adjustments.count.should == 1
+          @order.adjustments.price.count.should == 1
         end
 
         it "should not create a tax refund" do
@@ -281,7 +281,7 @@ describe Spree::TaxRate do
 
           it "should create multiple price adjustments" do
             @rate.adjust(@order, @order.line_items)
-            @order.price_adjustments.count.should == 2
+            @order.adjustments.price.count.should == 2
           end
 
           it "should not create a tax refund" do
@@ -300,7 +300,7 @@ describe Spree::TaxRate do
 
           it "should not create a price adjustment" do
             @rate.adjust(@order, @order.line_items)
-            @order.price_adjustments.count.should == 0
+            @order.adjustments.price.count.should == 0
           end
 
           it "should create a tax refund for both line items" do
@@ -321,7 +321,7 @@ describe Spree::TaxRate do
 
         it "should not create a price adjustment" do
           @rate.adjust(@order, @order.line_items)
-          @order.price_adjustments.count.should == 2
+          @order.adjustments.price.count.should == 2
         end
 
         it "should not create a tax refund" do
