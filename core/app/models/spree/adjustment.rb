@@ -68,8 +68,10 @@ module Spree
     # record from db for the association
     def update!
       return if immutable?
-      self.update_column(:amount, source.compute_amount(adjustable))
+      amount = source.compute_amount(adjustable)
+      self.update_column(:amount, amount)
       # set_eligibility
+      amount
     end
 
     def currency
