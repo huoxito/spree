@@ -131,13 +131,13 @@ describe Spree::Product do
     describe 'Variants sorting' do
       context 'without master variant' do
         it 'sorts variants by position' do
-          product.variants.to_sql.should match(/ORDER BY \"spree_variants\".position ASC/)
+          product.variants.to_sql.should match(/ORDER BY (\`|\")spree_variants(\`|\").position ASC/)
         end
       end
 
       context 'with master variant' do
         it 'sorts variants by position' do
-          product.variants_including_master.to_sql.should match(/ORDER BY \"spree_variants\".position ASC/)
+          product.variants_including_master.to_sql.should match(/ORDER BY (\`|\")spree_variants(\`|\").position ASC/)
         end
       end
     end
@@ -260,6 +260,18 @@ describe Spree::Product do
       @product.save_permalink(@product.name)
       @product.permalink.should == "foobar-1"
     end
+
+    context "override permalink of deleted product" do 
+      let(:product) { create(:product, :name => "foo") } 
+
+      it "should create product with same permalink from name like deleted product" do 
+        product.permalink.should == "foo" 
+        product.destroy 
+        
+        new_product = create(:product, :name => "foo") 
+        new_product.permalink.should == "foo" 
+      end 
+    end 
   end
 
   context "properties" do
