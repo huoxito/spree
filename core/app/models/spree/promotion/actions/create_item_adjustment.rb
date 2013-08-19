@@ -1,7 +1,7 @@
 module Spree
   class Promotion
     module Actions
-      class CreateAdjustment < PromotionAction
+      class CreateItemAdjustment < PromotionAction
         include Spree::Core::CalculatedAdjustments
 
         has_many :adjustments, as: :source
@@ -11,26 +11,28 @@ module Spree
         before_validation :ensure_action_has_calculator
         before_destroy :deals_with_adjustments
 
-        # Creates the adjustment related to a promotion for the order passed
-        # through options hash
-        def perform(options = {})
-          order = options[:order]
-          return if order.promotion_credit_exists?(self)
+        def perform(payload = {})
+          line_item = payload[:line_item]
+          unless line_item.promotion_credit_exists?(self)
+            self.create_adjustment(line_item)
+          end
+        end
 
-          amount = compute_amount(calculable)
-          order.adjustments.create!(
+        def create_adjustment(adjustable)
+          amount = self.compute_amount(adjustable)
+          self.adjustments.create!(
             amount: amount,
-            adjustable: order,
-            source: self,
+            adjustable: adjustable,
+            order: adjustable.order,
             label: "#{Spree.t(:promotion)} (#{promotion.name})",
           )
         end
 
         # Ensure a negative amount which does not exceed the sum of the order's
         # item_total and ship_total
-        def compute_amount(calculable)
-          amount = self.calculator.compute(calculable).to_f.abs
-          [(calculable.item_total + calculable.ship_total), amount].min * -1
+        def compute_amount(adjustable)
+          amount = self.calculator.compute(adjustable).to_f.abs
+          [adjustable.total, amount].min * -1
         end
 
         private
@@ -40,7 +42,7 @@ module Spree
           end
 
           def deals_with_adjustments
-            adjustment_scope = self.adjustments.includes(:order).references(:spree_orders)
+            adjustment_scope = Adjustment.includes(:order).references(:spree_orders)
             # For incomplete orders, remove the adjustment completely.
             adjustment_scope.where("spree_orders.completed_at IS NULL").each do |adjustment|
               adjustment.destroy
