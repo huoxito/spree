@@ -39,6 +39,9 @@ module Spree
     has_many :state_changes, as: :stateful
     has_many :line_items, -> { order('created_at ASC') }, dependent: :destroy
     has_many :payments, dependent: :destroy
+    has_many :return_authorizations, dependent: :destroy
+    has_many :adjustments, -> { order('created_at ASC') }, as: :adjustable, dependent: :destroy
+    has_many :line_item_adjustments, through: :line_items, source: :adjustments
 
     has_many :shipments, dependent: :destroy do
       def states
