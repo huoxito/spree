@@ -428,6 +428,8 @@ module Spree
     def empty!
       line_items.destroy_all
       adjustments.destroy_all
+      updater.update_totals
+      updater.persist_totals
     end
 
     def has_step?(step)
