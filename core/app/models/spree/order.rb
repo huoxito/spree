@@ -49,9 +49,6 @@ module Spree
       end
     end
 
-    has_many :return_authorizations, dependent: :destroy
-    has_many :adjustments, -> { order('created_at ASC') }, dependent: :destroy
-
     accepts_nested_attributes_for :line_items
     accepts_nested_attributes_for :bill_address
     accepts_nested_attributes_for :ship_address
