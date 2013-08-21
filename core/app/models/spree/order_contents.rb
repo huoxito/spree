@@ -6,25 +6,26 @@ module Spree
       @order = order
     end
 
-    # Get current line item for variant if exists
-    # Add variant qty to line_item
     def add(variant, quantity, currency=nil, shipment=nil)
       line_item = add_to_line_item(variant, quantity, currency, shipment)
-      PromotionItemHandlers.new(line_item).activate
+      order_updater.update_item_total
+      PromotionItemHandlers.new(order, line_item).activate
       adjust_line_item line_item
     end
 
-    # Get current line item for variant
-    # Remove variant qty from line_item
     def remove(variant, quantity, shipment=nil)
       line_item = remove_from_line_item(variant, quantity, shipment)
       adjust_line_item line_item
     end
 
     private
+      def order_updater
+        @updater ||= OrderUpdater.new(order)
+      end
+
       def adjust_line_item(line_item)
         ItemAdjustments.new(line_item).update
-        OrderUpdater.new(order).update
+        order_updater.update
 
         order.reload
         line_item
