@@ -74,6 +74,11 @@ module Spree
           Spree::Calculator::PercentPerItem,
           Spree::Calculator::FreeShipping
         ]
+
+        app.config.spree.calculators.add_class('promotion_actions_create_item_adjustments')
+        app.config.spree.calculators.promotion_actions_create_item_adjustments = [
+          Spree::Calculator::FlatRate
+        ]
       end
 
       # Promotion rules need to be evaluated on after initialize otherwise
@@ -90,8 +95,10 @@ module Spree
       end
 
       initializer 'spree.promo.register.promotions.actions' do |app|
-        app.config.spree.promotions.actions = [Spree::Promotion::Actions::CreateAdjustment,
-          Spree::Promotion::Actions::CreateLineItems]
+        app.config.spree.promotions.actions = [
+          Promotion::Actions::CreateAdjustment,
+          Promotion::Actions::CreateItemAdjustment,
+          Promotion::Actions::CreateLineItems]
       end
 
       # filter sensitive information during logging
