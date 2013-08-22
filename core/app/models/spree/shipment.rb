@@ -214,6 +214,10 @@ module Spree
       package
     end
 
+    def create_adjustment
+      self.shipping_method.create_adjustment(self)
+    end
+
     private
 
       def manifest_unstock(item)
