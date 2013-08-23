@@ -472,8 +472,8 @@ module Spree
       shipments
     end
 
-    def create_shipments_cost
-      shipments.each { |shipment| shipment.create_cost_adjustment }
+    def set_shipments_cost
+      shipments.each { |shipment| shipment.persist_cost }
       updater.update_shipment_total
       updater.persist_totals
     end

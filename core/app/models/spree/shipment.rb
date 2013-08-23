@@ -209,17 +209,16 @@ module Spree
       package
     end
 
-    def create_cost_adjustment
-      cost_adjustment = self.shipping_method.create_adjustment(self)
-      update_amounts cost_adjustment
-      cost_adjustment
+    def persist_cost
+      self.cost = selected_shipping_rate.cost
+      update_amounts
     end
 
     private
-      def update_amounts(cost_adjustment)
+      def update_amounts
         self.update_columns(
-          cost: cost_adjustment.amount,
-          adjustment_total: adjustments.map(&:amount).sum
+          cost: self.cost,
+          adjustment_total: adjustments.map(&:update!).compact.sum
         )
       end
 
