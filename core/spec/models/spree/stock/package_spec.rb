@@ -88,6 +88,7 @@ module Spree
         subject.shipping_rates = [ Spree::ShippingRate.new(shipping_method: shipping_method, cost: 10.00, selected: true) ]
 
         shipment = subject.to_shipment
+        shipment.cost.should == 0
         shipment.order.should == subject.order
         shipment.stock_location.should == subject.stock_location
         shipment.inventory_units.size.should == 3
