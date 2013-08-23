@@ -296,10 +296,11 @@ describe Spree::Shipment do
     let(:shipping_method) { mock_model Spree::ShippingMethod }
     let(:shipment) { create(:shipment) }
 
-    it "delegates to shipping_method" do
+    it "delegates to shipping_method and update shipment totals" do
       shipment.stub shipping_method: shipping_method
       expect(shipping_method).to receive(:create_adjustment).with(shipment)
-      shipment.create_adjustment
+      expect(shipment).to receive :update_amounts
+      shipment.create_cost_adjustment
     end
   end
 

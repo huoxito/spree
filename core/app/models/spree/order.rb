@@ -472,8 +472,8 @@ module Spree
       shipments
     end
 
-    def create_shipment_adjustments
-      shipments.each { |shipment| shipment.create_adjustment }
+    def create_shipments_cost
+      shipments.each { |shipment| shipment.create_cost_adjustment }
     end
 
     private
