@@ -45,6 +45,7 @@ module Spree
       end
     end
     
+    scope :open, -> { where(state: 'open') }
     scope :tax, -> { where(source_type: 'Spree::TaxRate') }
     scope :price, -> { where(adjustable_type: 'Spree::LineItem') }
     scope :shipping, -> { where(adjustable_type: 'Spree::Shipment') }
@@ -59,18 +60,10 @@ module Spree
       state != "open"
     end
     
-    # Update both the eligibility and amount of the adjustment. Adjustments 
-    # delegate updating of amount to their Originator when present, but only if
-    # +locked+ is false. Adjustments that are +locked+ will never change their amount.
-    #
-    # order#update_adjustments passes self as the src, this is so calculations can
-    # be performed on the # current values. If we used source it would load the old
-    # record from db for the association
-    def update!
+    def update!(target = nil)
       return if immutable?
-      amount = source.compute_amount(adjustable)
+      amount = source.compute_amount(target || adjustable)
       self.update_column(:amount, amount)
-      # set_eligibility
       amount
     end
 
