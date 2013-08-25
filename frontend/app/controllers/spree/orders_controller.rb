@@ -19,9 +19,7 @@ module Spree
         redirect_to root_path and return
       end
 
-      if @order.update_attributes(order_params)
-        @order.line_items = @order.line_items.select {|li| li.quantity > 0 }
-        @order.create_proposed_shipments if @order.shipments.any?
+      if @order.contents.update_cart(order_params)
         return if after_update_attributes
 
         respond_with(@order) do |format|

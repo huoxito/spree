@@ -11,11 +11,30 @@ module Spree
       order_updater.update_item_total
       PromotionItemHandlers.new(order, line_item).activate
       adjust_line_item line_item
+      reload_totals
+
+      line_item
     end
 
     def remove(variant, quantity, shipment=nil)
       line_item = remove_from_line_item(variant, quantity, shipment)
       adjust_line_item line_item
+      reload_totals
+
+      line_item
+    end
+
+    def update_cart(params)
+      if order.update_attributes params
+        order.line_items = order.line_items.select {|li| li.quantity > 0 }
+        order.create_proposed_shipments if order.shipments.any?
+
+        order.line_items.each { |item| adjust_line_item item }
+        reload_totals
+        true
+      else
+        false
+      end
     end
 
     private
@@ -25,13 +44,15 @@ module Spree
 
       def adjust_line_item(line_item)
         ItemAdjustments.new(line_item).update
+        line_item
+      end
 
+      def reload_totals
         order_updater.update_item_total
         order_updater.update_adjustment_total
         order_updater.persist_totals
 
         order.reload
-        line_item
       end
 
       def add_to_line_item(variant, quantity, currency=nil, shipment=nil)
