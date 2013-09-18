@@ -429,6 +429,7 @@ module Spree
       adjustments.destroy_all
       updater.update_totals
       updater.persist_totals
+      promotion_pools.destroy_all
     end
 
     def has_step?(step)
