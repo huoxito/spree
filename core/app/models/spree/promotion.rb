@@ -9,6 +9,8 @@ module Spree
     has_many :promotion_actions, foreign_key: :activator_id, autosave: true, dependent: :destroy
     alias_method :actions, :promotion_actions
 
+    has_many :order_pools, class_name: "Spree::OrderPromotionPool"
+
     accepts_nested_attributes_for :promotion_actions, :promotion_rules
 
     validates_associated :rules
@@ -39,6 +41,8 @@ module Spree
 
     def activate(payload)
       return unless order_activatable? payload[:order]
+
+      self.order_pools.find_or_create_by(order_id: payload[:order].id)
 
       # Track results from actions to see if any action has been taken.
       # Actions should return nil/false if no action has been taken.
