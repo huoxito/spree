@@ -67,6 +67,21 @@ describe Spree::OrderContents do
         end
 
         include_context "discount changes order total"
+
+        context "coupon promo involved and item added after coupon applied" do
+          let(:new_product) { create(:variant) }
+
+          before do
+            promotion.update_column :code, "Huhu"
+            subject.add variant
+            promotion.activate(order: subject.order)
+          end
+
+          it "applies adjustment to the new item " do
+            line_item = subject.add new_product
+            expect(line_item.adjustments.promotion).not_to be_empty
+          end
+        end
       end
     end
 

@@ -24,6 +24,13 @@ module Spree
         self
       end
 
+      # Considering an adjustment would be created for each item when the
+      # promotion is activated we need to activate it as well for items added
+      # later to the order
+      def activate_coupon_pool
+        order.promotion_pools.code.each { |pool| pool.promotion.activate(order: order) }
+      end
+
       def promotion
         @promotion ||= Promotion.active.includes(:promotion_rules, :promotion_actions).find_by(code: order.coupon_code)
       end

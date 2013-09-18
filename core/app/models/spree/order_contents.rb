@@ -9,8 +9,11 @@ module Spree
     def add(variant, quantity = 1, currency = nil, shipment = nil)
       line_item = add_to_line_item(variant, quantity, currency, shipment)
       order_updater.update_item_total
+
       PromotionHandler::Cart.new(order, line_item).activate
+      PromotionHandler::Coupon.new(order).activate_coupon_pool
       ItemAdjustments.new(line_item).update
+
       reload_totals
       line_item
     end
