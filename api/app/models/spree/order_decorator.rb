@@ -9,6 +9,8 @@ Spree::Order.class_eval do
       order = create!
       order.associate_user!(user)
 
+      def order.create_tax_charge; end
+
       order.create_shipments_from_api params.delete(:shipments_attributes) || []
       order.create_line_items_from_api params.delete(:line_items_attributes) || {}
       order.create_adjustments_from_api params.delete(:adjustments_attributes) || []
