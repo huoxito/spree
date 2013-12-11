@@ -45,10 +45,12 @@ module Spree
       end
 
       initializer "spree.register.payment_methods" do |app|
-        app.config.spree.payment_methods = [
-            Spree::Gateway::Bogus,
-            Spree::Gateway::BogusSimple,
-            Spree::PaymentMethod::Check ]
+        ActiveSupport.on_load(:delegate_belongs_to) do
+          app.config.spree.payment_methods = [
+              Spree::Gateway::Bogus,
+              Spree::Gateway::BogusSimple,
+              Spree::PaymentMethod::Check ]
+        end
       end
 
       initializer "spree.mail.settings" do |app|

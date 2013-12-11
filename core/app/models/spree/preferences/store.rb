@@ -71,10 +71,12 @@ module Spree::Preferences
     def persist(cache_key, value, type)
       return unless should_persist?
 
-      preference = Spree::Preference.where(:key => cache_key).first_or_initialize
-      preference.value = value
-      preference.value_type = type
-      preference.save
+      ActiveSupport.on_load(:active_record) do
+        preference = Spree::Preference.where(:key => cache_key).first_or_initialize
+        preference.value = value
+        preference.value_type = type
+        preference.save
+      end
     end
 
     def destroy(cache_key)

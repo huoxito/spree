@@ -33,7 +33,9 @@ module Spree
   # This method is defined within the core gem on purpose.
   # Some people may only wish to use the Core part of Spree.
   def self.config(&block)
-    yield(Spree::Config)
+    # ActiveSupport.on_load(:active_record) do
+      yield(Spree::Config)
+    # end
   end
 end
 
