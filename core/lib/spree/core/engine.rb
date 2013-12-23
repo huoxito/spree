@@ -98,6 +98,12 @@ module Spree
           :number,
           :verification_value]
       end
+
+      config.after_initialize do
+        if !defined?(Rake) || !Rake.application.top_level_tasks.include?("assets:precompile")
+          ActiveSupport.run_load_hooks :spree_config, Spree::Config
+        end
+      end
     end
   end
 end

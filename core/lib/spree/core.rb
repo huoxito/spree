@@ -1,13 +1,17 @@
 require 'rails/all'
 require 'active_merchant'
-require 'acts_as_list'
-require 'awesome_nested_set'
-require 'cancan'
-require 'kaminari'
+
+ActiveSupport.on_load(:active_record) do
+  require 'acts_as_list'
+  require 'awesome_nested_set'
+  require 'cancan'
+  require 'paranoia'
+  require 'ransack'
+end
+
 require 'mail'
+require 'kaminari'
 require 'paperclip'
-require 'paranoia'
-require 'ransack'
 require 'state_machine'
 
 module Spree
@@ -33,7 +37,9 @@ module Spree
   # This method is defined within the core gem on purpose.
   # Some people may only wish to use the Core part of Spree.
   def self.config(&block)
-    yield(Spree::Config)
+    ActiveSupport.on_load(:spree_config) do
+      yield(Spree::Config)
+    end
   end
 
   module Core
@@ -52,6 +58,7 @@ require 'spree/core/environment_extension'
 require 'spree/core/environment/calculators'
 require 'spree/core/environment'
 require 'spree/promo/environment'
+
 require 'spree/core/engine'
 
 require 'spree/i18n'
@@ -60,9 +67,17 @@ require 'spree/money'
 require 'spree/permitted_attributes'
 require 'spree/core/user_address'
 require 'spree/core/s3_support'
-require 'spree/core/delegate_belongs_to'
-require 'spree/core/permalinks'
-require 'spree/core/token_resource'
+
+ActiveSupport.on_load(:active_record) do
+  require 'spree/core/delegate_belongs_to'
+  require 'spree/core/permalinks'
+  require 'spree/core/token_resource'
+
+  ActiveRecord::Base.class_eval do
+    include CollectiveIdea::Acts::NestedSet
+  end
+end
+
 require 'spree/core/calculated_adjustments'
 require 'spree/core/product_duplicator'
 require 'spree/core/controller_helpers'
