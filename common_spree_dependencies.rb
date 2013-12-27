@@ -24,7 +24,7 @@ group :test do
   gem 'factory_girl_rails', '~> 4.2.1'
   gem 'launchy'
   gem 'pry'
-  gem 'rspec-rails', '~> 2.14.0'
+  gem 'rspec-rails', '~> 3.0.0.beta'
   gem 'selenium-webdriver', '~> 2.35'
   gem 'simplecov'
   gem 'webmock', '1.8.11'
