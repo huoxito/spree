@@ -57,8 +57,8 @@ describe Spree::Promotion do
 
   describe "#activate" do
     before do
-      @action1 = mock_model(Spree::PromotionAction, :perform => true)
-      @action2 = mock_model(Spree::PromotionAction, :perform => true)
+      @action1 = mock_model(Spree::PromotionAction, attributes: Spree::PromotionAction.column_names, perform: true)
+      @action2 = mock_model(Spree::PromotionAction, attributes: Spree::PromotionAction.column_names, perform: true)
       promotion.promotion_actions = [@action1, @action2]
       promotion.created_at = 2.days.ago
 

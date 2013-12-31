@@ -9,8 +9,8 @@ module Spree
 
     subject { StockTransfer.create(reference: 'PO123') }
 
-    its(:reference) { should eq 'PO123' }
-    its(:to_param) { should match /T\d+/ }
+    it { expect(subject.reference).to eq 'PO123' }
+    it { expect(subject.to_param).to match /T\d+/ }
 
     it 'transfers variants between 2 locations' do
       variants = { variant => 5 }

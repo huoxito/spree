@@ -169,7 +169,7 @@ describe Spree::Money do
         let(:input) { 42 }
 
         it { should be_a ::Money }
-        its(:currency) { should == ::Money.default_currency }
+        it { expect(subject.currency).to eq ::Money.default_currency }
       end
     end
   end
