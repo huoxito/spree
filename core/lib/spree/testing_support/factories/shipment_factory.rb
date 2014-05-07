@@ -14,7 +14,8 @@ FactoryGirl.define do
         line_item.quantity.times do
           shipment.inventory_units.create(
             variant_id: line_item.variant_id,
-            line_item_id: line_item.id
+            line_item_id: line_item.id,
+            quantity: 1
           )
         end
       end
