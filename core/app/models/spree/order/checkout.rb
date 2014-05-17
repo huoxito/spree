@@ -72,6 +72,11 @@ module Spree
               if states[:payment]
                 before_transition :to => :complete do |order|
                   order.process_payments! if order.payment_required?
+
+                  if order.payment_required?
+                    order.errors.add(:base, Spree.t(:no_payment_found))
+                    false
+                  end
                 end
               end
 
