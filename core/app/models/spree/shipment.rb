@@ -279,13 +279,15 @@ module Spree
       package
     end
 
-    def set_up_inventory(state, variant, line_item)
-      self.inventory_units.create(
-        state: state,
-        variant_id: variant.id,
-        line_item_id: line_item.id,
-        quantity: 1
-      )
+    def set_up_inventory(state, variant, line_item, quantity)
+      unless quantity == 0
+        self.inventory_units.create!(
+          state: state,
+          variant_id: variant.id,
+          line_item_id: line_item.id,
+          quantity: quantity
+        )
+      end
     end
 
     def update_amounts
