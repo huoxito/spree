@@ -79,7 +79,9 @@ module Spree
         shipment = subject.to_shipment
         shipment.order.should == subject.order
         shipment.stock_location.should == subject.stock_location
-        shipment.inventory_units.size.should == 3
+        shipment.inventory_units.size.should == 2
+        shipment.inventory_units[0].quantity.should == 2
+        shipment.inventory_units[1].quantity.should == 1
 
         first_unit = shipment.inventory_units.first
         first_unit.variant.should == variant
