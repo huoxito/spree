@@ -40,23 +40,23 @@ module Spree
       returned_count = returned_units.size
 
       if returned_count < quantity
-        order_units.each do |inventory_unit|
+        order_units.each do |unit|
           break if returned_count == quantity
-          next if inventory_unit.return_authorization_id
+          next if unit.return_authorization_id
 
-          inventory_unit.return_authorization = self
-          inventory_unit.save!
-
-          returned_count += 1
+          unit.split!(quantity - returned_count) do |new_unit|
+            new_unit.return_authorization = self
+            returned_count += new_unit.quantity
+          end
         end
       elsif returned_count > quantity
         returned_units.each do |unit|
           break if returned_count == quantity
 
-          returned_units[i].return_authorization_id = nil
-          returned_units[i].save!
-
-          returned_count -= 1
+          unit.split!(returned_count - quantity) do |new_unit|
+            new_unit.return_authorization = nil
+            returned_count -= new_unit.quantity
+          end
         end
       end
 

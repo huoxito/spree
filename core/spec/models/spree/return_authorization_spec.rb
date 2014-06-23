@@ -67,6 +67,29 @@ describe Spree::ReturnAuthorization do
         expect{return_authorization.add_variant(variant.id, 1)}.to_not change{order.state}
       end
     end
+
+    context "on inventory units with quantities" do
+      let(:line_item){ order.line_items.first }
+
+      before do
+        # This adds 9 of the first item in the order, which will now have two
+        # inventory_units, one with a quantity of 1 and another with a quantity
+        # of 9.
+        line_item.quantity = 10
+        line_item.target_shipment = order.shipments.first
+        line_item.save!
+      end
+
+      it "updates the units correctly" do
+        return_authorization.add_variant(variant.id, 5)
+
+        # Line item should still have 10 total units
+        expect(line_item.inventory_units.to_a.sum(&:quantity)).to eq 10
+
+        # 5 of them should be assigned to the return authorization
+        expect(return_authorization.inventory_units.to_a.sum(&:quantity)).to eq 5
+      end
+    end
   end
 
   context "can_receive?" do
