@@ -30,28 +30,33 @@ module Spree
       Spree::Money.new(amount, { currency: currency })
     end
 
+    # add_variant is a bit of a misnomer. This method actually *sets* the
+    # quantity of the variant we wish to return.
     def add_variant(variant_id, quantity)
-      order_units = returnable_inventory.group_by(&:variant_id)
-      returned_units = inventory_units.group_by(&:variant_id)
+      order_units = returnable_inventory.select{|unit| unit.variant_id == variant_id }
+      returned_units = inventory_units.select{  |unit| unit.variant_id == variant_id }
       return false if order_units.empty?
 
-      count = 0
+      returned_count = returned_units.size
 
-      if returned_units[variant_id].nil? || returned_units[variant_id].size < quantity
-        count = returned_units[variant_id].nil? ? 0 : returned_units[variant_id].size
-
-        order_units[variant_id].each do |inventory_unit|
-          next unless inventory_unit.return_authorization.nil? && count < quantity
+      if returned_count < quantity
+        order_units.each do |inventory_unit|
+          break if returned_count == quantity
+          next if inventory_unit.return_authorization_id
 
           inventory_unit.return_authorization = self
           inventory_unit.save!
 
-          count += 1
+          returned_count += 1
         end
-      elsif returned_units[variant_id].size > quantity
-        (returned_units[variant_id].size - quantity).times do |i|
-          returned_units[variant_id][i].return_authorization_id = nil
-          returned_units[variant_id][i].save!
+      elsif returned_count > quantity
+        returned_units.each do |unit|
+          break if returned_count == quantity
+
+          returned_units[i].return_authorization_id = nil
+          returned_units[i].save!
+
+          returned_count -= 1
         end
       end
 
