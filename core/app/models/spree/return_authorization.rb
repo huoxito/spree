@@ -71,6 +71,37 @@ module Spree
       pre_tax_total + additional_tax_total
     end
 
+    # add_variant is a bit of a misnomer. This method actually *sets* the
+    # quantity of the variant we wish to return.
+    def add_variant(variant_id, quantity)
+      order_units = returnable_inventory.select{|unit| unit.variant_id == variant_id }
+      returned_units = inventory_units.select{  |unit| unit.variant_id == variant_id }
+      return false if order_units.empty?
+
+      returned_count = returned_units.size
+
+      if returned_count < quantity
+        order_units.each do |unit|
+          break if returned_count == quantity
+          next if unit.return_authorization_id
+
+          unit.split!(quantity - returned_count) do |new_unit|
+            new_unit.return_authorization = self
+            returned_count += new_unit.quantity
+          end
+        end
+      elsif returned_count > quantity
+        returned_units.each do |unit|
+          break if returned_count == quantity
+
+          unit.split!(returned_count - quantity) do |new_unit|
+            new_unit.return_authorization = nil
+            returned_count -= new_unit.quantity
+          end
+        end
+      end
+    end
+
     def amount_due
       total - refunds.sum(:amount)
     end

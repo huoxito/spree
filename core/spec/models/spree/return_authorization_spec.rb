@@ -41,6 +41,58 @@ describe Spree::ReturnAuthorization do
     end
   end
 
+  context "add_variant" do
+    context "on empty rma" do
+      it "should associate inventory units as shipped" do
+        return_authorization.add_variant(variant.id, 1)
+        expect(return_authorization.inventory_units.where(state: 'shipped').size).to eq 1
+      end
+
+      it "should update order state" do
+        order.should_receive(:authorize_return!)
+        return_authorization.add_variant(variant.id, 1)
+      end
+    end
+
+    context "on rma that already has inventory_units" do
+      before do
+        return_authorization.add_variant(variant.id, 1)
+      end
+
+      it "should not associate more inventory units than there are on the order" do
+        return_authorization.add_variant(variant.id, 1)
+        expect(return_authorization.inventory_units.size).to eq 1
+      end
+
+      it "should not update order state" do
+        expect{return_authorization.add_variant(variant.id, 1)}.to_not change{order.state}
+      end
+    end
+
+    context "on inventory units with quantities" do
+      let(:line_item){ order.line_items.first }
+
+      before do
+        # This adds 9 of the first item in the order, which will now have two
+        # inventory_units, one with a quantity of 1 and another with a quantity
+        # of 9.
+        line_item.quantity = 10
+        line_item.target_shipment = order.shipments.first
+        line_item.save!
+      end
+
+      it "updates the units correctly" do
+        return_authorization.add_variant(variant.id, 5)
+
+        # Line item should still have 10 total units
+        expect(line_item.inventory_units.to_a.sum(&:quantity)).to eq 10
+
+        # 5 of them should be assigned to the return authorization
+        expect(return_authorization.inventory_units.to_a.sum(&:quantity)).to eq 5
+      end
+    end
+  end
+
   context "can_receive?" do
     it "should allow_receive when inventory units assigned" do
       return_authorization.stub(:inventory_units => [1,2,3])
