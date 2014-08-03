@@ -55,7 +55,6 @@ Spree.ready ($) ->
 
           url = Spree.url(Spree.routes.apply_coupon_code(Spree.current_order_id),
             {
-              order_token: Spree.current_order_token,
               coupon_code: coupon_code
             }
           )
