@@ -213,77 +213,55 @@ module Spree
             checkout_step_index(state) > checkout_step_index(self.state)
           end
 
-          define_callbacks :updating_from_params, terminator: ->(target, result) { result == false }
+          define_callbacks :checkout_update, terminator: ->(target, result) { result == false }
 
-          set_callback :updating_from_params, :before, :update_params_payment_source
-
-          def update_from_params(params, permitted_params, request_env = {})
+          def checkout_update(params, permitted_params, request_env = {})
             success = false
-            @updating_params = params
-            run_callbacks :updating_from_params do
-              attributes = @updating_params[:order] ? @updating_params[:order].permit(permitted_params) : {}
+            run_callbacks :checkout_update do
 
-              # Set existing card after setting permitted parameters because
-              # rails would slice parameters containg ruby objects, apparently
-              #
-              # Need to check both outside and inside :order beacuse frontend
-              # sends existing_card out of :order
-              existing_card_id = @updating_params[:order] ? @updating_params[:order][:existing_card] : nil
-
-              if existing_card_id.present?
-                credit_card = CreditCard.find existing_card_id
-                if credit_card.user_id != self.user_id || credit_card.user_id.blank?
-                  raise Core::GatewayError.new Spree.t(:invalid_credit_card)
-                end
-
-                credit_card.verification_value = params[:cvc_confirm] if params[:cvc_confirm].present?
-
-                attributes[:payments_attributes].first[:source] = credit_card
-                attributes[:payments_attributes].first[:payment_method_id] = credit_card.payment_method_id
-                attributes[:payments_attributes].first.delete :source_attributes
+              if self.payment?
+                payment_params = params[:payment] ? params[:payment] : {}
+                self.build_checkout_payment payment_params, permitted_params, request_env 
               end
 
-              if attributes[:payments_attributes]
-                attributes[:payments_attributes].first[:request_env] = request_env
-              end
+              order_params = params[:order] ? params[:order].permit(permitted_params) : {}
 
-              success = self.update_attributes(attributes)
+              success = self.update_attributes(order_params)
               set_shipments_cost if self.shipments.any?
             end
 
-            @updating_params = nil
             success
           end
 
-          private
-          # For payment step, filter order parameters to produce the expected nested
-          # attributes for a single payment and its source, discarding attributes
-          # for payment methods other than the one selected
-          #
-          # In case a existing credit card is provided it needs to build the payment
-          # attributes from scratch so we can set the amount. example payload:
-          #
-          #   {
-          #     "order": {
-          #       "existing_card": "2"
-          #     }
-          #   }
-          #
-          def update_params_payment_source
-            if has_checkout_step?("payment") && self.payment?
-              if @updating_params[:payment_source].present?
-                source_params = @updating_params.delete(:payment_source)[@updating_params[:order][:payments_attributes].first[:payment_method_id].to_s]
+          alias :update_from_params :checkout_update
 
-                if source_params
-                  @updating_params[:order][:payments_attributes].first[:source_attributes] = source_params
-                end
-              end
+          def build_checkout_payment(params, permitted_params, request_env = {})
+            params[:amount] = self.total
 
-              if @updating_params[:order][:payments_attributes] || @updating_params[:order][:existing_card]
-                @updating_params[:order][:payments_attributes] ||= [{}]
-                @updating_params[:order][:payments_attributes].first[:amount] = self.total
-              end
+            if params[:payment_source].present?
+              source_params = params.delete(:payment_source)[params[:payment_method_id].to_s]
+              params[:source_attributes] = source_params if source_params
             end
+
+            allowed = permitted_params.select { |p| p.is_a?(Hash) && p[:payments_attributes].present? }.first
+            payment_params = params.permit allowed[:payments_attributes]
+
+            if params[:existing_card].present?
+              credit_card = CreditCard.find params[:existing_card]
+              if credit_card.user_id != self.user_id || credit_card.user_id.blank?
+                raise Core::GatewayError.new Spree.t(:invalid_credit_card)
+              end
+
+              if params[:cvc_confirm].present?
+                credit_card.verification_value = params[:cvc_confirm] 
+              end
+
+              payment_params[:source] = credit_card
+              payment_params[:payment_method_id] = credit_card.payment_method_id
+              payment_params.delete :source_attributes
+            end
+
+            self.payments.new payment_params
           end
         end
       end
