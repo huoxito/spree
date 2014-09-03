@@ -27,11 +27,20 @@ module Spree
     def update
       if @order.update_from_params(params, permitted_checkout_attributes, request.headers.env)
         @order.temporary_address = !params[:save_user_address]
+
         unless @order.next
           flash[:error] = @order.errors.full_messages.join("\n")
           redirect_to checkout_state_path(@order.state) and return
         end
 
+        handle_post_update_redirect
+      else
+        render :edit
+      end
+    end
+
+    private
+      def handle_post_update_redirect
         if @order.completed?
           @current_order = nil
           flash.notice = Spree.t(:order_processed_successfully)
@@ -40,18 +49,19 @@ module Spree
         else
           redirect_to checkout_state_path(@order.state)
         end
-      else
-        render :edit
       end
-    end
 
-    private
       def ensure_valid_state
         unless skip_state_validation?
-          if (params[:state] && !@order.has_checkout_step?(params[:state])) ||
-             (!params[:state] && !@order.has_checkout_step?(@order.state))
-            @order.state = 'cart'
-            redirect_to checkout_state_path(@order.checkout_steps.first)
+          if @order.total.to_f == 0 && @order.payment?
+            @order.next
+            handle_post_update_redirect
+          else
+            if (params[:state] && !@order.has_checkout_step?(params[:state])) ||
+               (!params[:state] && !@order.has_checkout_step?(@order.state))
+              @order.state = 'cart'
+              redirect_to checkout_state_path(@order.checkout_steps.first)
+            end
           end
         end
 

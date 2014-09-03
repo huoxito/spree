@@ -22,7 +22,6 @@ module Spree
         def promotions
           Spree::Promotion.active.where({
             :id => Spree::Promotion::Actions::FreeShipping.pluck(:promotion_id),
-            :code => nil,
             :path => nil
           })
         end
