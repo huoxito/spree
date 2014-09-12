@@ -15,6 +15,31 @@ module Spree
       where(default_tax: true).first
     end
 
+    def self.potential_matching_zones(zone)
+      if zone.kind == 'country'
+        # Match zones of the same kind with simialr countries
+        joins(:zone_members).where(
+          "(spree_zone_members.zoneable_type = 'Spree::Country' AND
+            spree_zone_members.zoneable_id IN (?))
+           OR default_tax = ?",
+          zone.country_ids,
+          true
+        ).uniq
+      else
+        # Match zones of the same kind with similar states in AND match zones that have the states countries in
+        joins(:zone_members).where(
+          "(spree_zone_members.zoneable_type = 'Spree::State' AND
+            spree_zone_members.zoneable_id IN (?))
+           OR (spree_zone_members.zoneable_type = 'Spree::Country' AND
+            spree_zone_members.zoneable_id IN (?))
+           OR default_tax = ?",
+          zone.state_ids,
+          zone.zoneables.collect(&:country_id),
+          true
+        ).uniq
+      end
+    end
+
     # Returns the matching zone with the highest priority zone type (State, Country, Zone.)
     # Returns nil in the case of no matches.
     def self.match(address)

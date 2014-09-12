@@ -302,4 +302,77 @@ describe Spree::Zone do
       end
     end
   end
+
+  context "#potential_matching_zones" do
+    let!(:country)  { create(:country) }
+    let!(:country2) { create(:country, name: 'OtherCountry') }
+    let!(:country3) { create(:country, name: 'TaxCountry') }
+    let!(:default_tax_zone) do
+      create(:zone, default_tax: true).tap { |z| z.members.create(zoneable: country3) }
+    end
+
+    context "finding potential matches for a country zone" do
+      let!(:zone) do
+        create(:zone).tap do |z|
+          z.members.create(zoneable: country)
+          z.members.create(zoneable: country2)
+          z.save!
+        end
+      end
+      let!(:zone2) do
+        create(:zone).tap { |z| z.members.create(zoneable: country) && z.save! }
+      end
+
+      before { @result = Spree::Zone.potential_matching_zones(zone) }
+
+      it "will find all zones with countries covered by the passed in zone" do
+        expect(@result).to include(zone, zone2)
+      end
+
+      it "only returns each zone once" do
+        expect(@result.select { |z| z == zone }.size).to be 1
+      end
+
+      it "will include the default_tax zone" do
+        expect(@result).to include(default_tax_zone)
+      end
+    end
+
+    context "finding potential matches for a state zone" do
+      let!(:state)  { create(:state, country: country) }
+      let!(:state2) { create(:state, country: country2, name: 'OtherState') }
+      let!(:state3) { create(:state, country: country2, name: 'State') }
+      let!(:zone) do
+        create(:zone).tap do |z|
+          z.members.create(zoneable: state)
+          z.members.create(zoneable: state2)
+          z.save!
+        end
+      end
+      let!(:zone2) do
+        create(:zone).tap { |z| z.members.create(zoneable: state) && z.save! }
+      end
+      let!(:zone3) do
+        create(:zone).tap { |z| z.members.create(zoneable: state2) && z.save! }
+      end
+
+      before { @result = Spree::Zone.potential_matching_zones(zone) }
+
+      it "will find all zones which share states covered by passed in zone" do
+        expect(@result).to include(zone, zone2)
+      end
+
+      it "will find zones that share countries with any states of the passed in zone" do
+        expect(@result).to include(zone3)
+      end
+
+      it "only returns each zone once" do
+        expect(@result.select { |z| z == zone }.size).to be 1
+      end
+
+      it "will include the default tax zone" do
+        expect(@result).to include(default_tax_zone)
+      end
+    end
+  end
 end
