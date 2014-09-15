@@ -1,6 +1,10 @@
 module Spree
   class Zone < Spree::Base
     has_many :zone_members, dependent: :destroy, class_name: "Spree::ZoneMember"
+
+    has_many :countries, through: :zone_members, source: :zoneable, source_type: 'Spree::Country'
+    has_many :states, through: :zone_members, source: :zoneable, source_type: 'Spree::State'
+
     has_many :tax_rates, dependent: :destroy
     has_and_belongs_to_many :shipping_methods, :join_table => 'spree_shipping_methods_zones'
 
@@ -35,7 +39,7 @@ module Spree
             spree_zone_members.zoneable_id IN (?))
            OR default_tax = ?",
           zone.state_ids,
-          zone.zoneables.collect(&:country_id),
+          zone.states.pluck(:country_id),
           true
         ).uniq
       end
@@ -148,9 +152,9 @@ module Spree
       return false if zone_members.empty? || target.zone_members.empty?
 
       if kind == target.kind
-        return false if (target.zoneables.collect(&:id) - zoneables.collect(&:id)).present?
+        return false if (target.countries.pluck(:id) - countries.pluck(:id)).present?
       else
-        return false if (target.zoneables.collect(&:country).collect(&:id) - zoneables.collect(&:id)).present?
+        return false if (target.states.pluck(:country_id) - countries.pluck(:id)).present?
       end
       true
     end
