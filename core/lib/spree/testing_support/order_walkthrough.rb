@@ -50,7 +50,11 @@ class OrderWalkthrough
   end
 
   def self.payment(order)
-    order.payments.create!(:payment_method => Spree::PaymentMethod.first, :amount => order.total)
+    if (pm = Spree::PaymentMethod.all.find { |pay_method| pay_method.class == 'Spree::Gateway::Bogus' })
+      order.payments.create!(:payment_method => pm, :amount => order.total)
+    else
+      order.payments.create!(payment_method: FactoryGirl.create(:credit_card_payment_method), amount: order.total)
+    end
     # TODO: maybe look at some way of making this payment_state change automatic
     order.payment_state = 'paid'
     order.next!
