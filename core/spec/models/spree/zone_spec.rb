@@ -301,6 +301,27 @@ describe Spree::Zone do
         @zone.kind.should == "state"
       end
     end
+
+    context "#cached_kind" do
+      let!(:zone) { create(:zone_with_country) }
+
+      it "should have a cached_kind of 'country'" do
+        expect(zone.cached_kind).to eq 'country'
+      end
+
+      it "calling #kind returns #cached_kind if available" do
+        expect(zone).to receive(:cached_kind)
+
+        zone.kind
+      end
+
+      it "can fall back to old method of finding #kind if nothing returned from #cached_kind" do
+        expect(zone).to receive(:cached_kind) # makes cached_kind return nil so #kind goes to fallback
+        expect(zone).to receive(:humanize_kind)
+
+        zone.kind
+      end
+    end
   end
 
   context "#potential_matching_zones" do
