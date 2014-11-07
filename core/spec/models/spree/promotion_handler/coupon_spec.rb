@@ -56,12 +56,25 @@ module Spree
                 order.reload.total.should == 100
               end
 
-              it "coupon already applied to the order" do
+              it "coupon already applied to the order, will be ok" do
                 subject.apply
                 expect(subject.success).to be_present
                 subject.apply
-                expect(subject.error).to eq Spree.t(:coupon_code_already_applied)
+                expect(subject.success).to be_present
               end
+
+              it "if a new product added to the order, apply to the new product" do
+                order.contents.add create(:variant)
+                total = order.total
+                subject.apply
+                order.line_items.each do |line_item|
+                  line_item.adjustments.count.should == 1
+                end
+                # Ensure that applying the adjustment actually affects the order's total!
+                order.reload.total.should == total - 40
+
+              end
+
             end
 
             # Regression test for #4211
@@ -115,11 +128,11 @@ module Spree
               order.shipment_adjustments.count.should == 1
             end
 
-            it "coupon already applied to the order" do
+            it "coupon already applied to the order, will be ok" do
               subject.apply
               expect(subject.success).to be_present
               subject.apply
-              expect(subject.error).to eq Spree.t(:coupon_code_already_applied)
+              expect(subject.success).to be_present
             end
           end
         end
@@ -145,11 +158,11 @@ module Spree
               order.adjustments.count.should == 1
             end
 
-            it "coupon already applied to the order" do
+            it "coupon already applied to the order, will be ok" do
               subject.apply
               expect(subject.success).to be_present
               subject.apply
-              expect(subject.error).to eq Spree.t(:coupon_code_already_applied)
+              expect(subject.success).to be_present
             end
 
             it "coupon fails to activate" do
