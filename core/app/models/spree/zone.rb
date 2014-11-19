@@ -8,10 +8,10 @@ module Spree
     has_many :tax_rates, dependent: :destroy
     has_and_belongs_to_many :shipping_methods, :join_table => 'spree_shipping_methods_zones'
 
-    validates :name, presence: true, uniqueness: true
+    validates :name, presence: true, uniqueness: { allow_blank: true }
+
     after_save :remove_defunct_members
     after_save :remove_previous_default
-    before_save :set_cached_kind
 
     alias :members :zone_members
     accepts_nested_attributes_for :zone_members, allow_destroy: true, reject_if: proc { |a| a['zoneable_id'].blank? }
@@ -61,18 +61,12 @@ module Spree
       matches.first
     end
 
-    def set_cached_kind
-      self.cached_kind = kind
-    end
-
     def kind
-      return cached_kind if cached_kind
-
-      humanize_kind if valid_members?
-    end
-
-    def kind=(value)
-      # do nothing - just here to satisfy the form
+      if kind?
+        super
+      else
+        members.last.zoneable_type.demodulize.underscore if members.any?
+      end
     end
 
     def include?(address)
@@ -160,11 +154,6 @@ module Spree
     end
 
     private
-
-      def humanize_kind
-        members.last.zoneable_type.demodulize.underscore
-      end
-
       def remove_defunct_members
         self.reload
         if zone_members.any?
@@ -174,10 +163,6 @@ module Spree
 
       def remove_previous_default
         Spree::Zone.where('id != ?', self.id).update_all(default_tax: false) if default_tax
-      end
-
-      def valid_members?
-        members.any? && !members.any? { |member| member.try(:zoneable_type).nil? }
       end
   end
 end
