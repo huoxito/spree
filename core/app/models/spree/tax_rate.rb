@@ -27,7 +27,10 @@ module Spree
     scope :by_zone, ->(zone) { where(zone_id: zone) }
 
     def self.potential_rates_for_zone(zone)
-      joins(:zone).merge(Spree::Zone.potential_matching_zones(zone)).order('spree_zones.default_tax DESC')
+      select("spree_tax_rates.*, spree_zones.default_tax")
+        .joins(:zone)
+        .merge(Spree::Zone.potential_matching_zones(zone))
+        .order('spree_zones.default_tax DESC')
     end
 
     # Gets the array of TaxRates appropriate for the specified order
