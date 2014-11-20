@@ -14,6 +14,8 @@ module Spree
     # This method should never do anything to the Order that results in a save call on the
     # object with callbacks (otherwise you will end up in an infinite recursion as the
     # associations try to save and then in turn try to call +update!+ again.)
+    #
+    # NOTE DEPRECATE THIS
     def update
       update_totals
       if order.completed?
@@ -29,6 +31,11 @@ module Spree
       update_hooks.each { |hook| order.send hook }
     end
 
+    # NOTE theres a good chance all order line items have been loaded already at
+    # this point so we could consider givin the order to the ItemAdjustments
+    # as well
+    #
+    # NOTE What actions should trigger adjustments to be updated?
     def recalculate_adjustments
       all_adjustments.includes(:adjustable).map(&:adjustable).uniq.each { |adjustable| Spree::ItemAdjustments.new(adjustable).update }
     end
@@ -40,13 +47,17 @@ module Spree
     # +adjustment_total+   The total value of all adjustments (promotions, credits, etc.)
     # +promo_total+        The total value of all promotion adjustments
     # +total+              The so-called "order total."  This is equivalent to +item_total+ plus +adjustment_total+.
+    #
+    # NOTE DEPRECATE THIS
     def update_totals
+      # NOTE WHY care about payment total when you sure you dont even have any
+      # payments yet? probably wise to avoid using this `update_total` method
       update_payment_total
+
       update_item_total
       update_shipment_total
       update_adjustment_total
     end
-
 
     # give each of the shipments a chance to update themselves
     def update_shipments
@@ -72,16 +83,34 @@ module Spree
     end
 
     def update_adjustment_total
-      recalculate_adjustments
-      order.adjustment_total = line_items.sum(:adjustment_total) +
-                               shipments.sum(:adjustment_total)  +
-                               adjustments.eligible.sum(:amount)
-      order.included_tax_total = line_items.sum(:included_tax_total) + shipments.sum(:included_tax_total)
-      order.additional_tax_total = line_items.sum(:additional_tax_total) + shipments.sum(:additional_tax_total)
+      # NOTE detach the adjusments recalculation from generals totals thing?
+      # recalculate_adjustments
 
-      order.promo_total = line_items.sum(:promo_total) +
-                          shipments.sum(:promo_total) +
-                          adjustments.promotion.eligible.sum(:amount)
+      # NOTE At this point we probably have all active record line_items and
+      # shipments and adjustments instantiated so getting totals from them
+      # could be faster than hitting database for every SUM?
+
+      total_a = adjustments.map { |a| a.amount if a.eligible? }.reduce(:+) || 0
+      total_l = line_items.map { |l| l.adjustment_total }.reduce(:+) || 0
+      total_s = shipments.map { |s| s.adjustment_total }.reduce(:+) || 0
+
+      order.adjustment_total = total_l + total_s + total_a
+                               
+      total_l = line_items.map { |l| l.included_tax_total }.reduce(:+) || 0
+      total_s = shipments.map { |s| s.included_tax_total }.reduce(:+) || 0
+
+      order.included_tax_total = total_l + total_s
+
+      total_l = line_items.map { |l| l.additional_tax_total }.reduce(:+) || 0
+      total_s = shipments.map { |s| s.additional_tax_total }.reduce(:+) || 0
+
+      order.additional_tax_total = total_l + total_s
+
+      total_l = line_items.map { |l| l.promo_total }.reduce(:+) || 0
+      total_s = shipments.map { |s| s.promo_total }.reduce(:+) || 0
+      total_a = adjustments.map { |a| a.amount if a.eligible? && a.promotion? }.compact.reduce(:+) || 0
+
+      order.promo_total = total_l + total_s + total_a
 
       update_order_total
     end
@@ -91,7 +120,10 @@ module Spree
     end
 
     def update_item_total
-      order.item_total = line_items.sum('price * quantity')
+      order.item_total = line_items.map do |item|
+        item.price * item.quantity
+      end.sum(:+)
+
       update_order_total
     end
 

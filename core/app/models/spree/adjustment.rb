@@ -107,8 +107,15 @@ module Spree
 
     def update_adjustable_adjustment_total
       # Cause adjustable's total to be recalculated
+      #
+      # NOTE likely a pretty bad idea because it's reloading the adjustable from
+      # the database which should never happen if we want to do as much calculation
+      # as possible in memory without reaching db. we lose all references of what
+      # was set before. Natural way should be the adjustable creates the adjustment
+      # and after that updates its adjustment_total himself. NOT adjustment
+      # responsability to do that
+      #
       ItemAdjustments.new(adjustable).update
     end
-
   end
 end

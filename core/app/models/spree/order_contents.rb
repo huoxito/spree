@@ -34,12 +34,34 @@ module Spree
 
     private
       def after_add_or_remove(line_item, options = {})
-        reload_totals
-        shipment = options[:shipment]
-        shipment.present? ? shipment.update_amounts : order.ensure_updated_shipments
+        # NOTE work on a light `reload_totals` version to not persist anything
+        # and read as least as possible from database
+        # reload_totals
+
+        order_updater.update_item_count
+        order_updater.update_item_total
+
+        # NOTE Fiure why we'd need to update adjustments before activating others?
+        # order_updater.recalculate_adjustments
+
+        # shipment = options[:shipment]
+        # NOTE How we never care about shipments when putting stuff in a cart? Cart object?
+        # shipment.present? ? shipment.update_amounts : order.ensure_updated_shipments
+
         PromotionHandler::Cart.new(order, line_item).activate
         ItemAdjustments.new(line_item).update
-        reload_totals
+
+        # Never reload all spree objects / recalculate / hit db because you 
+        # added something to cart
+        # reload_totals
+
+        order_updater.update_item_total
+        # order_updater.recalculate_adjustments
+        order_updater.update_adjustment_total
+        order_updater.persist_totals
+
+        # order.reload
+
         line_item
       end
 
@@ -61,6 +83,7 @@ module Spree
         @updater ||= OrderUpdater.new(order)
       end
 
+      # NOTE deprecate this +order.update+
       def reload_totals
         order_updater.update_item_count
         order_updater.update
