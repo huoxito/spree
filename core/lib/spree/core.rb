@@ -13,7 +13,7 @@ require 'paranoia'
 require 'premailer/rails'
 require 'ransack'
 require 'responders'
-require 'state_machine'
+require 'state_machines-activerecord'
 
 module Spree
 
@@ -76,10 +76,10 @@ require 'spree/core/controller_helpers/store'
 require 'spree/core/controller_helpers/strong_parameters'
 
 # Hack waiting on https://github.com/pluginaweek/state_machine/pull/275
-module StateMachine
-  module Integrations
-    module ActiveModel
-      public :around_validation
-    end
-  end
-end
+# module StateMachine
+#   module Integrations
+#     module ActiveModel
+#       public :around_validation
+#     end
+#   end
+# end

@@ -19,7 +19,10 @@ gem 'coffee-rails', '~> 4.0.0'
 gem 'sass-rails', '~> 5.0.0.beta1'
 
 gem 'paranoia', github: 'huoxito/paranoia', branch: 'rails-4.2'
-gem 'state_machine', github: 'huoxito/state_machine', branch: 'spree-rails4.2-upgrade'
+
+gem 'state_machines', path: '../../state_machines'
+gem 'state_machines-activemodel', path: '../../state_machines-activemodel'
+gem 'state_machines-activerecord', path: '../../state_machines-activerecord'
 
 group :test do
   gem 'capybara', '~> 2.4'
