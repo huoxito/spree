@@ -5,7 +5,7 @@ describe Spree::Payment, :type => :model do
   let(:refund_reason) { create(:refund_reason) }
 
   let(:gateway) do
-    gateway = Spree::Gateway::Bogus.new(:environment => 'test', :active => true)
+    gateway = Spree::Gateway::Bogus.new(:active => true)
     allow(gateway).to receive_messages :source_required => true
     gateway
   end
@@ -164,16 +164,9 @@ describe Spree::Payment, :type => :model do
       end
 
       it "should log the response" do
-        expect {
-          payment.authorize!
-        }.to change { Spree::LogEntry.count }.by 1
-      end
-
-      context "when gateway does not match the environment" do
-        it "should raise an exception" do
-          allow(gateway).to receive_messages :environment => "foo"
-          expect { payment.authorize! }.to raise_error(Spree::Core::GatewayError)
-        end
+        payment.save!
+        expect(payment.log_entries).to receive(:create!).with(details: anything)
+        payment.authorize!
       end
 
       context "if successful" do
@@ -216,16 +209,9 @@ describe Spree::Payment, :type => :model do
       end
 
       it "should log the response" do
-        expect {
-          payment.purchase!
-        }.to change { Spree::LogEntry.count }.by 1
-      end
-
-      context "when gateway does not match the environment" do
-        it "should raise an exception" do
-          allow(gateway).to receive_messages :environment => "foo"
-          expect { payment.purchase!  }.to raise_error(Spree::Core::GatewayError)
-        end
+        payment.save!
+        expect(payment.log_entries).to receive(:create!).with(details: anything)
+        payment.purchase!
       end
 
       context "if successful" do
@@ -364,13 +350,6 @@ describe Spree::Payment, :type => :model do
       it "should log the response" do
         expect(payment.log_entries).to receive(:create!).with(:details => anything)
         payment.void_transaction!
-      end
-
-      context "when gateway does not match the environment" do
-        it "should raise an exception" do
-          allow(gateway).to receive_messages :environment => "foo"
-          expect { payment.void_transaction! }.to raise_error(Spree::Core::GatewayError)
-        end
       end
 
       context "if successful" do
